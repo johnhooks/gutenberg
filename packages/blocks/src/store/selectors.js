@@ -10,18 +10,28 @@ import { get } from 'lodash';
  */
 import { pipe } from '@wordpress/compose';
 
-/** @typedef {import('../api/registration').WPBlockVariation} WPBlockVariation */
-/** @typedef {import('../api/registration').WPBlockVariationScope} WPBlockVariationScope */
-/** @typedef {import('./reducer').WPBlockCategory} WPBlockCategory */
+/**
+ * @typedef {import('../types').BlockAttribute<any>} BlockAttribute
+ * @typedef {import('../types').BlockAttributes} BlockAttributes
+ * @typedef {import('../types').BlockCategory} BlockCategory
+ * @typedef {import('../types').BlockCollection} BlockCollection
+ * @typedef {import('../types').BlockVariation} BlockVariation
+ * @typedef {import('../types').BlockVariationScope} BlockVariationScope
+ * @typedef {import('../types').BlockStyle} BlockStyle
+ * @typedef {import('../types').BlockSupports} BlockSupports
+ * @typedef {import('../types').BlockType} BlockType
+ * @typedef {import('../types').InnerBlockTemplate} InnerBlockTemplate
+ * @typedef {import('./types').BlockStoreState} BlockStoreState
+ */
 
 /**
  * Given a block name or block type object, returns the corresponding
  * normalized block type object.
  *
- * @param {Object}          state      Blocks state.
- * @param {(string|Object)} nameOrType Block name or type object
+ * @param {BlockStoreState}  state      Blocks state.
+ * @param {string|BlockType} nameOrType Block name or type object
  *
- * @return {Object} Block type object.
+ * @return {BlockType|undefined} Block type object.
  */
 const getNormalizedBlockType = ( state, nameOrType ) =>
 	'string' === typeof nameOrType
@@ -31,9 +41,9 @@ const getNormalizedBlockType = ( state, nameOrType ) =>
 /**
  * Returns all the unprocessed block types as passed during the registration.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
- * @return {Array} Unprocessed block types.
+ * @return {any[]|undefined} Unprocessed block types.
  */
 export function __experimentalGetUnprocessedBlockTypes( state ) {
 	return state.unprocessedBlockTypes;
@@ -42,7 +52,7 @@ export function __experimentalGetUnprocessedBlockTypes( state ) {
 /**
  * Returns all the available block types.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -65,7 +75,7 @@ export function __experimentalGetUnprocessedBlockTypes( state ) {
  * };
  * ```
  *
- * @return {Array} Block Types.
+ * @return {BlockType[]} Block Types.
  */
 export const getBlockTypes = createSelector(
 	( state ) => Object.values( state.blockTypes ),
@@ -75,8 +85,8 @@ export const getBlockTypes = createSelector(
 /**
  * Returns a block type by name.
  *
- * @param {Object} state Data state.
- * @param {string} name  Block type name.
+ * @param {BlockStoreState} state Data state.
+ * @param {string}          name  Block type name.
  *
  * @example
  * ```js
@@ -107,7 +117,7 @@ export const getBlockTypes = createSelector(
  * };
  * ```
  *
- * @return {Object?} Block Type.
+ * @return {BlockType|undefined} Block Type.
  */
 export function getBlockType( state, name ) {
 	return state.blockTypes[ name ];
@@ -116,8 +126,8 @@ export function getBlockType( state, name ) {
 /**
  * Returns block styles by block name.
  *
- * @param {Object} state Data state.
- * @param {string} name  Block type name.
+ * @param {BlockStoreState} state Data state.
+ * @param {string}          name  Block type name.
  *
  * @example
  * ```js
@@ -141,7 +151,7 @@ export function getBlockType( state, name ) {
  * };
  * ```
  *
- * @return {Array?} Block Styles.
+ * @return {BlockStyle[]} Block Styles.
  */
 export function getBlockStyles( state, name ) {
 	return state.blockStyles[ name ];
@@ -150,9 +160,9 @@ export function getBlockStyles( state, name ) {
 /**
  * Returns block variations by block name.
  *
- * @param {Object}                state     Data state.
- * @param {string}                blockName Block type name.
- * @param {WPBlockVariationScope} [scope]   Block variation scope name.
+ * @param {BlockStoreState}      state     Data state.
+ * @param {string}               blockName Block type name.
+ * @param {BlockVariationScope=} scope     Block variation scope name.
  *
  * @example
  * ```js
@@ -176,7 +186,7 @@ export function getBlockStyles( state, name ) {
  * };
  * ```
  *
- * @return {(WPBlockVariation[]|void)} Block variations.
+ * @return {(BlockVariation[]|undefined) & EnhancedSelector} Block variations.
  */
 export const getBlockVariations = createSelector(
 	( state, blockName, scope ) => {
@@ -207,10 +217,10 @@ export const getBlockVariations = createSelector(
  * and the variation's attributes and determines if a variation is active.
  * A function that accepts a block's attributes and the variation's attributes and determines if a variation is active.
  *
- * @param {Object}                state      Data state.
- * @param {string}                blockName  Name of block (example: “core/columns”).
- * @param {Object}                attributes Block attributes used to determine active variation.
- * @param {WPBlockVariationScope} [scope]    Block variation scope name.
+ * @param {BlockStoreState}      state      Data state.
+ * @param {string}               blockName  Name of block (example: “core/columns”).
+ * @param {BlockAttributes}      attributes Block attributes used to determine active variation.
+ * @param {BlockVariationScope=} scope      Block variation scope name.
  *
  * @example
  * ```js
@@ -240,7 +250,7 @@ export const getBlockVariations = createSelector(
  * };
  * ```
  *
- * @return {(WPBlockVariation|undefined)} Active block variation.
+ * @return {BlockVariation|undefined} Active block variation.
  */
 export function getActiveBlockVariation( state, blockName, attributes, scope ) {
 	const variations = getBlockVariations( state, blockName, scope );
@@ -274,9 +284,9 @@ export function getActiveBlockVariation( state, blockName, attributes, scope ) {
  * the last added item is picked. This simplifies registering overrides.
  * When there is no default variation set, it returns the first item.
  *
- * @param {Object}                state     Data state.
- * @param {string}                blockName Block type name.
- * @param {WPBlockVariationScope} [scope]   Block variation scope name.
+ * @param {BlockStoreState}      state     Data state.
+ * @param {string}               blockName Block type name.
+ * @param {BlockVariationScope=} scope     Block variation scope name.
  *
  * @example
  * ```js
@@ -303,7 +313,7 @@ export function getActiveBlockVariation( state, blockName, attributes, scope ) {
  * };
  * ```
  *
- * @return {?WPBlockVariation} The default block variation.
+ * @return {BlockVariation|undefined} The default block variation.
  */
 export function getDefaultBlockVariation( state, blockName, scope ) {
 	const variations = getBlockVariations( state, blockName, scope );
@@ -318,7 +328,7 @@ export function getDefaultBlockVariation( state, blockName, scope ) {
 /**
  * Returns all the available block categories.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -341,7 +351,7 @@ export function getDefaultBlockVariation( state, blockName, scope ) {
  * };
  * ```
  *
- * @return {WPBlockCategory[]} Categories list.
+ * @return {BlockCategory[]} Categories list.
  */
 export function getCategories( state ) {
 	return state.categories;
@@ -350,7 +360,7 @@ export function getCategories( state ) {
 /**
  * Returns all the available collections.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -374,7 +384,7 @@ export function getCategories( state ) {
  * };
  * ```
  *
- * @return {Object} Collections list.
+ * @return {BlockCollection[]} Collections list.
  */
 export function getCollections( state ) {
 	return state.collections;
@@ -383,7 +393,7 @@ export function getCollections( state ) {
 /**
  * Returns the name of the default block name.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -407,7 +417,7 @@ export function getCollections( state ) {
  * };
  * ```
  *
- * @return {string?} Default block name.
+ * @return {string|undefined} Default block name.
  */
 export function getDefaultBlockName( state ) {
 	return state.defaultBlockName;
@@ -416,7 +426,7 @@ export function getDefaultBlockName( state ) {
 /**
  * Returns the name of the block for handling non-block content.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -443,7 +453,7 @@ export function getDefaultBlockName( state ) {
  * };
  * ```
  *
- * @return {string?} Name of the block for handling non-block content.
+ * @return {string|undefined} Name of the block for handling non-block content.
  */
 export function getFreeformFallbackBlockName( state ) {
 	return state.freeformFallbackBlockName;
@@ -452,7 +462,7 @@ export function getFreeformFallbackBlockName( state ) {
 /**
  * Returns the name of the block for handling unregistered blocks.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -479,7 +489,7 @@ export function getFreeformFallbackBlockName( state ) {
  * };
  * ```
  *
- * @return {string?} Name of the block for handling unregistered blocks.
+ * @return {string|undefined} Name of the block for handling unregistered blocks.
  */
 export function getUnregisteredFallbackBlockName( state ) {
 	return state.unregisteredFallbackBlockName;
@@ -488,7 +498,7 @@ export function getUnregisteredFallbackBlockName( state ) {
 /**
  * Returns the name of the block for handling the grouping of blocks.
  *
- * @param {Object} state Data state.
+ * @param {BlockStoreState} state Data state.
  *
  * @example
  * ```js
@@ -515,7 +525,7 @@ export function getUnregisteredFallbackBlockName( state ) {
  * };
  * ```
  *
- * @return {string?} Name of the block for handling the grouping of blocks.
+ * @return {string|undefined} Name of the block for handling the grouping of blocks.
  */
 export function getGroupingBlockName( state ) {
 	return state.groupingBlockName;
@@ -524,8 +534,8 @@ export function getGroupingBlockName( state ) {
 /**
  * Returns an array with the child blocks of a given block.
  *
- * @param {Object} state     Data state.
- * @param {string} blockName Block type name.
+ * @param {BlockStoreState} state     Data state.
+ * @param {string}          blockName Block type name.
  *
  * @example
  * ```js
@@ -549,7 +559,7 @@ export function getGroupingBlockName( state ) {
  * };
  * ```
  *
- * @return {Array} Array of child block names.
+ * @return {string[]} Array of child block names.
  */
 export const getChildBlockNames = createSelector(
 	( state, blockName ) => {
@@ -565,11 +575,11 @@ export const getChildBlockNames = createSelector(
 /**
  * Returns the block support value for a feature, if defined.
  *
- * @param {Object}          state           Data state.
- * @param {(string|Object)} nameOrType      Block name or type object
- * @param {Array|string}    feature         Feature to retrieve
- * @param {*}               defaultSupports Default value to return if not
- *                                          explicitly defined
+ * @param {BlockStoreState}  state           Data state.
+ * @param {string|BlockType} nameOrType      Block name or type object
+ * @param {string|string[]}  feature         Feature to retrieve
+ * @param {*}                defaultSupports Default value to return if not
+ *                                           explicitly defined
  *
  * @example
  * ```js
@@ -594,7 +604,7 @@ export const getChildBlockNames = createSelector(
  * };
  * ```
  *
- * @return {?*} Block support value
+ * @return {*} Block support value
  */
 export const getBlockSupport = (
 	state,
@@ -613,11 +623,12 @@ export const getBlockSupport = (
 /**
  * Returns true if the block defines support for a feature, or false otherwise.
  *
- * @param {Object}          state           Data state.
- * @param {(string|Object)} nameOrType      Block name or type object.
- * @param {string}          feature         Feature to test.
- * @param {boolean}         defaultSupports Whether feature is supported by
- *                                          default if not explicitly defined.
+ * @param {BlockStoreState}  state           Data state.
+ * @param {string|BlockType} nameOrType      Block name or type object.
+ * @param {string}           feature         Feature to test.
+ *
+ * @param {boolean}          defaultSupports Whether feature is supported by
+ *                                           default if not explicitly defined.
  *
  * @example
  * ```js
@@ -652,9 +663,9 @@ export function hasBlockSupport( state, nameOrType, feature, defaultSupports ) {
  * Returns true if the block type by the given name or object value matches a
  * search term, or false otherwise.
  *
- * @param {Object}          state      Blocks state.
- * @param {(string|Object)} nameOrType Block name or type object.
- * @param {string}          searchTerm Search term by which to filter.
+ * @param {BlockStoreState}  state      Blocks state.
+ * @param {string|BlockType} nameOrType Block name or type object.
+ * @param {string}           searchTerm Search term by which to filter.
  *
  * @example
  * ```js
@@ -685,7 +696,7 @@ export function hasBlockSupport( state, nameOrType, feature, defaultSupports ) {
  * };
  * ```
  *
- * @return {Object[]} Whether block type matches search term.
+ * @return {boolean} Whether block type matches search term.
  */
 export function isMatchingSearchTerm( state, nameOrType, searchTerm ) {
 	const blockType = getNormalizedBlockType( state, nameOrType );
@@ -724,8 +735,8 @@ export function isMatchingSearchTerm( state, nameOrType, searchTerm ) {
 /**
  * Returns a boolean indicating if a block has child blocks or not.
  *
- * @param {Object} state     Data state.
- * @param {string} blockName Block type name.
+ * @param {BlockStoreState} state     Data state.
+ * @param {string}          blockName Block type name.
  *
  * @example
  * ```js
@@ -759,8 +770,8 @@ export const hasChildBlocks = ( state, blockName ) => {
 /**
  * Returns a boolean indicating if a block has at least one child block with inserter support.
  *
- * @param {Object} state     Data state.
- * @param {string} blockName Block type name.
+ * @param {BlockStoreState} state     Data state.
+ * @param {string}          blockName Block type name.
  *
  * @example
  * ```js

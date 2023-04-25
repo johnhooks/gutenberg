@@ -1,9 +1,13 @@
+/**
+ * @typedef {import('../types').BlockDeprecation} BlockDeprecation
+ */
+
 export const BLOCK_ICON_DEFAULT = 'block-default';
 
 /**
  * Array of valid keys in a block type settings deprecation object.
  *
- * @type {string[]}
+ * @type {Array<keyof BlockDeprecation | 'apiVersion'>}
  */
 export const DEPRECATED_ENTRY_KEYS = [
 	'attributes',

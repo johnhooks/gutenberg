@@ -8,16 +8,21 @@
 		"noImplicitAny": false
 	},
 	"references": [
-		{ "path": "../api-fetch" },
-		{ "path": "../blocks" },
+		{ "path": "../autop" },
+		{ "path": "../blob" },
+		{ "path": "../block-serialization-default-parser" },
+		{ "path": "../components" },
 		{ "path": "../compose" },
 		{ "path": "../data" },
 		{ "path": "../deprecated" },
+		{ "path": "../dom" },
 		{ "path": "../element" },
+		{ "path": "../hooks" },
 		{ "path": "../html-entities" },
 		{ "path": "../i18n" },
 		{ "path": "../is-shallow-equal" },
-		{ "path": "../url" }
+		{ "path": "../private-apis" }
 	],
-	"include": [ "src/**/*" ]
+
+	"include": [ "src/**/*", "src/api/i18n-block.json" ]
 }

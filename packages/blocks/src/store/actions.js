@@ -15,9 +15,17 @@ import { applyFilters } from '@wordpress/hooks';
 import { isValidIcon, normalizeIconObject, omit } from '../api/utils';
 import { DEPRECATED_ENTRY_KEYS } from '../api/constants';
 
-/** @typedef {import('../api/registration').WPBlockVariation} WPBlockVariation */
-/** @typedef {import('../api/registration').WPBlockType} WPBlockType */
-/** @typedef {import('./reducer').WPBlockCategory} WPBlockCategory */
+/**
+ * @typedef {import('../types').BlockAttributes} BlockAttributes
+ * @typedef {import('../types').BlockCategory} BlockCategory
+ * @typedef {import('../types').BlockCollection} BlockCollection
+ * @typedef {import('../types').BlockDeprecation} BlockDeprecation
+ * @typedef {import('../types').BlockIconRenderer} BlockIconRenderer
+ * @typedef {import('../types').BlockVariation} BlockVariation
+ * @typedef {import('../types').BlockStyle} BlockStyle
+ * @typedef {import('../types').BlockType} BlockType
+ * @typedef {import('../types').BlockTypeCategory} BlockTypeCategory
+ */
 
 const { error, warn } = window.console;
 
@@ -25,7 +33,7 @@ const { error, warn } = window.console;
  * Mapping of legacy category slugs to their latest normal values, used to
  * accommodate updates of the default set of block categories.
  *
- * @type {Record<string,string>}
+ * @type {Record<string,BlockTypeCategory>}
  */
 const LEGACY_CATEGORY_MAPPING = {
 	common: 'text',
@@ -47,11 +55,13 @@ function isFunction( maybeFunc ) {
  * Takes the unprocessed block type data and applies all the existing filters for the registered block type.
  * Next, it validates all the settings and performs additional processing to the block type definition.
  *
- * @param {WPBlockType} blockType        Unprocessed block type settings.
- * @param {Object}      thunkArgs        Argument object for the thunk middleware.
- * @param {Function}    thunkArgs.select Function to select from the store.
+ * TODO Originally `thunkArgs.select` was typed as a function, but it is used as an object
  *
- * @return {WPBlockType | undefined} The block, if it has been successfully registered; otherwise `undefined`.
+ * @param {BlockType} blockType        Unprocessed block type settings.
+ * @param {Object}    thunkArgs        Argument object for the thunk middleware.
+ * @param {Object}    thunkArgs.select Function to select from the store.
+ *
+ * @return {BlockType | undefined} The block, if it has been successfully registered; otherwise `undefined`.
  */
 const processBlockType = ( blockType, { select } ) => {
 	const { name } = blockType;
@@ -150,15 +160,21 @@ const processBlockType = ( blockType, { select } ) => {
 };
 
 /**
+ * @typedef {Object} AddBlockTypesAction
+ * @property {'ADD_BLOCK_TYPES'} type       The action type.
+ * @property {BlockType[]}       blockTypes The `BlockType`s to add.
+ */
+
+/**
  * Returns an action object used in signalling that block types have been added.
  * Ignored from documentation as the recommended usage for this action through registerBlockType from @wordpress/blocks.
  *
  * @ignore
  *
- * @param {WPBlockType|WPBlockType[]} blockTypes Object or array of objects representing blocks to added.
+ * @param {BlockType|BlockType[]} blockTypes Object or array of objects representing blocks to added.
  *
  *
- * @return {Object} Action object.
+ * @return {AddBlockTypesAction} Action object.
  */
 export function addBlockTypes( blockTypes ) {
 	return {
@@ -170,7 +186,7 @@ export function addBlockTypes( blockTypes ) {
 /**
  * Signals that the passed block type's settings should be stored in the state.
  *
- * @param {WPBlockType} blockType Unprocessed block type settings.
+ * @param {BlockType} blockType Unprocessed block type settings.
  */
 export const __experimentalRegisterBlockType =
 	( blockType ) =>
@@ -229,6 +245,12 @@ export const __experimentalReapplyBlockTypeFilters =
 	};
 
 /**
+ * @typedef {Object} RemoveBlockTypesAction
+ * @property {'REMOVE_BLOCK_TYPES'} type  The action type.
+ * @property {string[]}             names The names of the`BlockType`s to remove.
+ */
+
+/**
  * Returns an action object used to remove a registered block type.
  * Ignored from documentation as the recommended usage for this action through unregisterBlockType from @wordpress/blocks.
  *
@@ -237,7 +259,7 @@ export const __experimentalReapplyBlockTypeFilters =
  * @param {string|string[]} names Block name or array of block names to be removed.
  *
  *
- * @return {Object} Action object.
+ * @return {RemoveBlockTypesAction} Action object.
  */
 export function removeBlockTypes( names ) {
 	return {
@@ -247,15 +269,22 @@ export function removeBlockTypes( names ) {
 }
 
 /**
+ * @typedef {Object} AddBlockStylesAction
+ * @property {'ADD_BLOCK_STYLES'} type      The action type.
+ * @property {string}             blockName The name of the`BlockType` to add styles to.
+ * @property {BlockStyle[]}       styles    The `BlockStyle`s to add.
+ */
+
+/**
  * Returns an action object used in signalling that new block styles have been added.
  * Ignored from documentation as the recommended usage for this action through registerBlockStyle from @wordpress/blocks.
  *
- * @param {string}       blockName Block name.
- * @param {Array|Object} styles    Block style object or array of block style objects.
+ * @param {string}                  blockName Block name.
+ * @param {BlockStyle|BlockStyle[]} styles    Block style object or array of block style objects.
  *
  * @ignore
  *
- * @return {Object} Action object.
+ * @return {AddBlockStylesAction} Action object.
  */
 export function addBlockStyles( blockName, styles ) {
 	return {
@@ -266,15 +295,22 @@ export function addBlockStyles( blockName, styles ) {
 }
 
 /**
+ * @typedef {Object} RemoveBlockStylesAction
+ * @property {'REMOVE_BLOCK_STYLES'} type       The action type.
+ * @property {string}                blockName  The name of the`BlockType` to remove styles from.
+ * @property {string[]}              styleNames The names of the `BlockStyle`s to remove.
+ */
+
+/**
  * Returns an action object used in signalling that block styles have been removed.
  * Ignored from documentation as the recommended usage for this action through unregisterBlockStyle from @wordpress/blocks.
  *
  * @ignore
  *
- * @param {string}       blockName  Block name.
- * @param {Array|string} styleNames Block style names or array of block style names.
+ * @param {string}          blockName  Block name.
+ * @param {string|string[]} styleNames Block style names or array of block style names.
  *
- * @return {Object} Action object.
+ * @return {RemoveBlockStylesAction} Action object.
  */
 export function removeBlockStyles( blockName, styleNames ) {
 	return {
@@ -285,15 +321,22 @@ export function removeBlockStyles( blockName, styleNames ) {
 }
 
 /**
+ * @typedef {Object} AddBlockVariationsAction
+ * @property {'ADD_BLOCK_VARIATIONS'} type       The action type.
+ * @property {string}                 blockName  The name of the`BlockType` to add variations to.
+ * @property {BlockStyle[]}           variations The `BlockVariations`s to add.
+ */
+
+/**
  * Returns an action object used in signalling that new block variations have been added.
  * Ignored from documentation as the recommended usage for this action through registerBlockVariation from @wordpress/blocks.
  *
  * @ignore
  *
- * @param {string}                              blockName  Block name.
- * @param {WPBlockVariation|WPBlockVariation[]} variations Block variations.
+ * @param {string}                          blockName  Block name.
+ * @param {BlockVariation|BlockVariation[]} variations Block variations.
  *
- * @return {Object} Action object.
+ * @return {AddBlockVariationsAction} Action object.
  */
 export function addBlockVariations( blockName, variations ) {
 	return {
@@ -304,6 +347,13 @@ export function addBlockVariations( blockName, variations ) {
 }
 
 /**
+ * @typedef {Object} RemoveBlockVariationsAction
+ * @property {'REMOVE_BLOCK_VARIATIONS'} type           The action type.
+ * @property {string}                    blockName      The name of the`BlockType` to remove variations from.
+ * @property {string[]}                  variationNames The names of the `BlockVariations`s to remove.
+ */
+
+/**
  * Returns an action object used in signalling that block variations have been removed.
  * Ignored from documentation as the recommended usage for this action through unregisterBlockVariation from @wordpress/blocks.
  *
@@ -312,7 +362,7 @@ export function addBlockVariations( blockName, variations ) {
  * @param {string}          blockName      Block name.
  * @param {string|string[]} variationNames Block variation names.
  *
- * @return {Object} Action object.
+ * @return {RemoveBlockVariationsAction} Action object.
  */
 export function removeBlockVariations( blockName, variationNames ) {
 	return {
@@ -332,7 +382,7 @@ export function removeBlockVariations( blockName, variationNames ) {
  *
  * @param {string} name Block name.
  *
- * @return {Object} Action object.
+ * @return {{type: 'SET_DEFAULT_BLOCK_NAME', name: string}} Action object.
  */
 export function setDefaultBlockName( name ) {
 	return {
@@ -350,7 +400,7 @@ export function setDefaultBlockName( name ) {
  *
  * @param {string} name Block name.
  *
- * @return {Object} Action object.
+ * @return {{type: 'SET_FREEFORM_FALLBACK_BLOCK_NAME', name: string}} Action object.
  */
 export function setFreeformFallbackBlockName( name ) {
 	return {
@@ -368,7 +418,7 @@ export function setFreeformFallbackBlockName( name ) {
  *
  * @param {string} name Block name.
  *
- * @return {Object} Action object.
+ * @return {{type: 'SET_UNREGISTERED_FALLBACK_BLOCK_NAME', name: string}} Action object.
  */
 export function setUnregisteredFallbackBlockName( name ) {
 	return {
@@ -387,7 +437,7 @@ export function setUnregisteredFallbackBlockName( name ) {
  *
  * @param {string} name Block name.
  *
- * @return {Object} Action object.
+ * @return {{type: 'SET_GROUPING_BLOCK_NAME', name: string}} Action object.
  */
 export function setGroupingBlockName( name ) {
 	return {
@@ -402,9 +452,9 @@ export function setGroupingBlockName( name ) {
  *
  * @ignore
  *
- * @param {WPBlockCategory[]} categories Block categories.
+ * @param {BlockCategory[]} categories Block categories.
  *
- * @return {Object} Action object.
+ * @return {{type: 'SET_CATEGORIES', categories: BlockCategory[]}} Action object.
  */
 export function setCategories( categories ) {
 	return {
@@ -419,10 +469,10 @@ export function setCategories( categories ) {
  *
  * @ignore
  *
- * @param {string} slug     Block category slug.
- * @param {Object} category Object containing the category properties that should be updated.
+ * @param {string}                 slug     Block category slug.
+ * @param {Partial<BlockCategory>} category Object containing the category properties that should be updated.
  *
- * @return {Object} Action object.
+ * @return {{type: 'UPDATE_CATEGORY', slug: string, category: BlockCategory}} Action object.
  */
 export function updateCategory( slug, category ) {
 	return {
@@ -438,11 +488,11 @@ export function updateCategory( slug, category ) {
  *
  * @ignore
  *
- * @param {string} namespace The namespace of the blocks to put in the collection
- * @param {string} title     The title to display in the block inserter
- * @param {Object} icon      (optional) The icon to display in the block inserter
+ * @param {string}            namespace The namespace of the blocks to put in the collection
+ * @param {string}            title     The title to display in the block inserter
+ * @param {BlockIconRenderer} icon      (optional) The icon to display in the block inserter
  *
- * @return {Object} Action object.
+ * @return {{type: 'ADD_BLOCK_COLLECTION', namespace: string, title: string, icon: BlockIconRenderer}} Action object.
  */
 export function addBlockCollection( namespace, title, icon ) {
 	return {
@@ -461,7 +511,7 @@ export function addBlockCollection( namespace, title, icon ) {
  *
  * @param {string} namespace The namespace of the blocks to put in the collection
  *
- * @return {Object} Action object.
+ * @return {{type: 'REMOVE_BLOCK_COLLECTION', namespace: string}} Action object.
  */
 export function removeBlockCollection( namespace ) {
 	return {

@@ -19,118 +19,24 @@ import { BLOCK_ICON_DEFAULT } from './constants';
 import { store as blocksStore } from '../store';
 
 /**
- * An icon type definition. One of a Dashicon slug, an element,
- * or a component.
- *
- * @typedef {(string|WPElement|WPComponent)} WPIcon
- *
- * @see https://developer.wordpress.org/resource/dashicons/
- */
-
-/**
- * Render behavior of a block type icon; one of a Dashicon slug, an element,
- * or a component.
- *
- * @typedef {WPIcon} WPBlockTypeIconRender
- */
-
-/**
- * An object describing a normalized block type icon.
- *
- * @typedef {Object} WPBlockTypeIconDescriptor
- *
- * @property {WPBlockTypeIconRender} src         Render behavior of the icon,
- *                                               one of a Dashicon slug, an
- *                                               element, or a component.
- * @property {string}                background  Optimal background hex string
- *                                               color when displaying icon.
- * @property {string}                foreground  Optimal foreground hex string
- *                                               color when displaying icon.
- * @property {string}                shadowColor Optimal shadow hex string
- *                                               color when displaying icon.
- */
-
-/**
- * Value to use to render the icon for a block type in an editor interface,
- * either a Dashicon slug, an element, a component, or an object describing
- * the icon.
- *
- * @typedef {(WPBlockTypeIconDescriptor|WPBlockTypeIconRender)} WPBlockTypeIcon
- */
-
-/**
- * Named block variation scopes.
- *
- * @typedef {'block'|'inserter'|'transform'} WPBlockVariationScope
- */
-
-/**
- * An object describing a variation defined for the block type.
- *
- * @typedef {Object} WPBlockVariation
- *
- * @property {string}                  name          The unique and machine-readable name.
- * @property {string}                  title         A human-readable variation title.
- * @property {string}                  [description] A detailed variation description.
- * @property {string}                  [category]    Block type category classification,
- *                                                   used in search interfaces to arrange
- *                                                   block types by category.
- * @property {WPIcon}                  [icon]        An icon helping to visualize the variation.
- * @property {boolean}                 [isDefault]   Indicates whether the current variation is
- *                                                   the default one. Defaults to `false`.
- * @property {Object}                  [attributes]  Values which override block attributes.
- * @property {Array[]}                 [innerBlocks] Initial configuration of nested blocks.
- * @property {Object}                  [example]     Example provides structured data for
- *                                                   the block preview. You can set to
- *                                                   `undefined` to disable the preview shown
- *                                                   for the block type.
- * @property {WPBlockVariationScope[]} [scope]       The list of scopes where the variation
- *                                                   is applicable. When not provided, it
- *                                                   assumes all available scopes.
- * @property {string[]}                [keywords]    An array of terms (which can be translated)
- *                                                   that help users discover the variation
- *                                                   while searching.
- * @property {Function|string[]}       [isActive]    This can be a function or an array of block attributes.
- *                                                   Function that accepts a block's attributes and the
- *                                                   variation's attributes and determines if a variation is active.
- *                                                   This function doesn't try to find a match dynamically based
- *                                                   on all block's attributes, as in many cases some attributes are irrelevant.
- *                                                   An example would be for `embed` block where we only care
- *                                                   about `providerNameSlug` attribute's value.
- *                                                   We can also use a `string[]` to tell which attributes
- *                                                   should be compared as a shorthand. Each attributes will
- *                                                   be matched and the variation will be active if all of them are matching.
- */
-
-/**
- * Defined behavior of a block type.
- *
- * @typedef {Object} WPBlockType
- *
- * @property {string}             name          Block type's namespaced name.
- * @property {string}             title         Human-readable block type label.
- * @property {string}             [description] A detailed block type description.
- * @property {string}             [category]    Block type category classification,
- *                                              used in search interfaces to arrange
- *                                              block types by category.
- * @property {WPBlockTypeIcon}    [icon]        Block type icon.
- * @property {string[]}           [keywords]    Additional keywords to produce block
- *                                              type as result in search interfaces.
- * @property {Object}             [attributes]  Block type attributes.
- * @property {WPComponent}        [save]        Optional component describing
- *                                              serialized markup structure of a
- *                                              block type.
- * @property {WPComponent}        edit          Component rendering an element to
- *                                              manipulate the attributes of a block
- *                                              in the context of an editor.
- * @property {WPBlockVariation[]} [variations]  The list of block variations.
- * @property {Object}             [example]     Example provides structured data for
- *                                              the block preview. When not defined
- *                                              then no preview is shown.
+ * @typedef {import('../types').BlockConfiguration} BlockConfiguration
+ * @typedef {import('../types').BlockIcon} BlockIcon
+ * @typedef {import('../types').BlockIconRenderer} BlockIconRenderer
+ * @typedef {import('../types').Block} BlockInstance
+ * @typedef {import('../types').BlockVariation} BlockVariation
+ * @typedef {import('../types').BlockVariationScope} BlockVariationScope
+ * @typedef {import('../types').BlockSupports} BlockSupports
+ * @typedef {import('../types').BlockType} BlockType
  */
 
 export const serverSideBlockDefinitions = {};
 
+/**
+ * Object type guard.
+ *
+ * @param {unknown} object The value to verify as a Record.
+ * @return { object is Record<string, any>} Whether or not `object` is a Record.
+ */
 function isObject( object ) {
 	return object !== null && typeof object === 'object';
 }
@@ -138,7 +44,7 @@ function isObject( object ) {
 /**
  * Sets the server side block definition of blocks.
  *
- * @param {Object} definitions Server-side block definitions
+ * @param {Record<string, BlockType>} definitions Server-side block definitions
  */
 // eslint-disable-next-line camelcase
 export function unstable__bootstrapServerSideBlockDefinitions( definitions ) {
@@ -196,8 +102,8 @@ export function unstable__bootstrapServerSideBlockDefinitions( definitions ) {
 /**
  * Gets block settings from metadata loaded from `block.json` file.
  *
- * @param {Object} metadata            Block metadata loaded from `block.json`.
- * @param {string} metadata.textdomain Textdomain to use with translations.
+ * @param {Object}  metadata            Block metadata loaded from `block.json`.
+ * @param {string=} metadata.textdomain Textdomain to use with translations.
  *
  * @return {Object} Block settings.
  */
@@ -251,8 +157,9 @@ function getBlockSettingsFromMetadata( { textdomain, ...metadata } ) {
  * For more in-depth information on registering a custom block see the
  * [Create a block tutorial](https://developer.wordpress.org/block-editor/getting-started/create-block/).
  *
- * @param {string|Object} blockNameOrMetadata Block type name or its metadata.
- * @param {Object}        settings            Block settings.
+ * @template {Record<string, any>} Attributes
+ * @param {string|import('../types').BlockConfiguration<Attributes>}                                                        blockNameOrMetadata Block type name or its metadata.
+ * @param {(Partial<import('../types').BlockConfiguration<Attributes>>|import('../types').BlockConfiguration<Attributes>)=} settings            Block settings.
  *
  * @example
  * ```js
@@ -266,7 +173,7 @@ function getBlockSettingsFromMetadata( { textdomain, ...metadata } ) {
  * } );
  * ```
  *
- * @return {WPBlockType | undefined} The block, if it has been successfully registered;
+ * @return {BlockType|undefined} The block, if it has been successfully registered;
  *                    otherwise `undefined`.
  */
 export function registerBlockType( blockNameOrMetadata, settings ) {
@@ -372,10 +279,10 @@ function translateBlockSettingUsingI18nSchema(
 /**
  * Registers a new block collection to group blocks in the same namespace in the inserter.
  *
- * @param {string} namespace       The namespace to group blocks by in the inserter; corresponds to the block namespace.
- * @param {Object} settings        The block collection settings.
- * @param {string} settings.title  The title to display in the block inserter.
- * @param {Object} [settings.icon] The icon to display in the block inserter.
+ * @param {string}             namespace      The namespace to group blocks by in the inserter; corresponds to the block namespace.
+ * @param {Object}             settings       The block collection settings.
+ * @param {string}             settings.title The title to display in the block inserter.
+ * @param {BlockIconRenderer=} settings.icon  The icon to display in the block inserter.
  *
  * @example
  * ```js
@@ -438,7 +345,7 @@ export function unregisterBlockCollection( namespace ) {
  * };
  * ```
  *
- * @return {WPBlockType | undefined} The previous block value, if it has been successfully
+ * @return {BlockType|undefined} The previous block value, if it has been successfully
  *                    unregistered; otherwise `undefined`.
  */
 export function unregisterBlockType( name ) {
@@ -464,7 +371,7 @@ export function setFreeformContentHandlerName( blockName ) {
  * Retrieves name of block handling non-block content, or undefined if no
  * handler has been defined.
  *
- * @return {?string} Block name.
+ * @return {string|undefined} Block name.
  */
 export function getFreeformContentHandlerName() {
 	return select( blocksStore ).getFreeformFallbackBlockName();
@@ -473,7 +380,7 @@ export function getFreeformContentHandlerName() {
 /**
  * Retrieves name of block used for handling grouping interactions.
  *
- * @return {?string} Block name.
+ * @return {string|undefined} Block name.
  */
 export function getGroupingBlockName() {
 	return select( blocksStore ).getGroupingBlockName();
@@ -492,7 +399,7 @@ export function setUnregisteredTypeHandlerName( blockName ) {
  * Retrieves name of block handling unregistered block types, or undefined if no
  * handler has been defined.
  *
- * @return {?string} Block name.
+ * @return {string|undefined} Block name.
  */
 export function getUnregisteredTypeHandlerName() {
 	return select( blocksStore ).getUnregisteredFallbackBlockName();
@@ -551,7 +458,7 @@ export function setGroupingBlockName( name ) {
 /**
  * Retrieves the default block name.
  *
- * @return {?string} Block name.
+ * @return {string|undefined} Block name.
  */
 export function getDefaultBlockName() {
 	return select( blocksStore ).getDefaultBlockName();
@@ -562,7 +469,7 @@ export function getDefaultBlockName() {
  *
  * @param {string} name Block name.
  *
- * @return {?Object} Block type.
+ * @return {BlockType|undefined} Block type.
  */
 export function getBlockType( name ) {
 	return select( blocksStore )?.getBlockType( name );
@@ -571,7 +478,7 @@ export function getBlockType( name ) {
 /**
  * Returns all registered blocks.
  *
- * @return {Array} Block settings.
+ * @return {BlockType[]} Block settings.
  */
 export function getBlockTypes() {
 	return select( blocksStore ).getBlockTypes();
@@ -580,12 +487,12 @@ export function getBlockTypes() {
 /**
  * Returns the block support value for a feature, if defined.
  *
- * @param {(string|Object)} nameOrType      Block name or type object
- * @param {string}          feature         Feature to retrieve
- * @param {*}               defaultSupports Default value to return if not
- *                                          explicitly defined
+ * @param {string|BlockType}    nameOrType      Block name or type object
+ * @param {keyof BlockSupports} feature         Feature to retrieve
+ * @param {*}                   defaultSupports Default value to return if not
+ *                                              explicitly defined
  *
- * @return {?*} Block support value
+ * @return {*} Block support value
  */
 export function getBlockSupport( nameOrType, feature, defaultSupports ) {
 	return select( blocksStore ).getBlockSupport(
@@ -598,10 +505,10 @@ export function getBlockSupport( nameOrType, feature, defaultSupports ) {
 /**
  * Returns true if the block defines support for a feature, or false otherwise.
  *
- * @param {(string|Object)} nameOrType      Block name or type object.
- * @param {string}          feature         Feature to test.
- * @param {boolean}         defaultSupports Whether feature is supported by
- *                                          default if not explicitly defined.
+ * @param {string|BlockType}    nameOrType      Block name or type object.
+ * @param {keyof BlockSupports} feature         Feature to test.
+ * @param {boolean}             defaultSupports Whether feature is supported by
+ *                                              default if not explicitly defined.
  *
  * @return {boolean} Whether block supports feature.
  */
@@ -618,7 +525,7 @@ export function hasBlockSupport( nameOrType, feature, defaultSupports ) {
  * special block type that is used to point to a global block stored via the
  * API.
  *
- * @param {Object} blockOrType Block or Block Type to test.
+ * @param { BlockType|BlockInstance} blockOrType Block or Block Type to test.
  *
  * @return {boolean} Whether the given block is a reusable block.
  */
@@ -631,7 +538,7 @@ export function isReusableBlock( blockOrType ) {
  * special block type that allows composing a page template out of reusable
  * design elements.
  *
- * @param {Object} blockOrType Block or Block Type to test.
+ * @param {BlockInstance|BlockType} blockOrType Block or Block Type to test.
  *
  * @return {boolean} Whether the given block is a template part.
  */
@@ -644,7 +551,7 @@ export function isTemplatePart( blockOrType ) {
  *
  * @param {string} blockName Name of block (example: “latest-posts”).
  *
- * @return {Array} Array of child block names.
+ * @return {string[]} Array of child block names.
  */
 export const getChildBlockNames = ( blockName ) => {
 	return select( blocksStore ).getChildBlockNames( blockName );
@@ -744,10 +651,10 @@ export const unregisterBlockStyle = ( blockName, styleVariationName ) => {
  *
  * @ignore
  *
- * @param {string}                blockName Name of block (example: “core/columns”).
- * @param {WPBlockVariationScope} [scope]   Block variation scope name.
+ * @param {string}               blockName Name of block (example: “core/columns”).
+ * @param {BlockVariationScope=} scope     Block variation scope name.
  *
- * @return {(WPBlockVariation[]|void)} Block variations.
+ * @return {BlockVariation[]|undefined)} Block variations.
  */
 export const getBlockVariations = ( blockName, scope ) => {
 	return select( blocksStore ).getBlockVariations( blockName, scope );
@@ -759,8 +666,8 @@ export const getBlockVariations = ( blockName, scope ) => {
  * For more information on block variations see
  * [the official documentation ](https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/).
  *
- * @param {string}           blockName Name of the block (example: “core/columns”).
- * @param {WPBlockVariation} variation Object describing a block variation.
+ * @param {string}         blockName Name of the block (example: “core/columns”).
+ * @param {BlockVariation} variation Object describing a block variation.
  *
  * @example
  * ```js
