@@ -336,8 +336,13 @@
 		&.has-text {
 			justify-content: start;
 			padding-right: $grid-unit-15;
-			padding-left: $grid-unit-10;
-			gap: $grid-unit-05;
+			padding-left: $grid-unit-15;
+			gap: $grid-unit-10;
+
+			& > svg {
+				margin-right: -$grid-unit-05;
+				margin-left: -$grid-unit-05;
+			}
 		}
 	}
 
